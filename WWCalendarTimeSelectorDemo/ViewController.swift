@@ -32,7 +32,8 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         "Multiple Selection (LinkedBalls)",//12
         "Date + Year + Time (without Top Panel)",//13
         "Date + Year + Time (without Top Container)",//14
-        "Date Range Selection"//15
+        "Date Range Selection",//15
+        "DateMonth + Year (One year range allowed)"//16
     ]
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
@@ -105,6 +106,21 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             selector.optionLayoutHeight = 300
         case 15:
             selector.optionSelectionType = WWCalendarTimeSelectorSelection.range
+            
+        case 16:
+            selector.optionStyles.showDateMonth(true)
+            selector.optionStyles.showMonth(false)
+            selector.optionStyles.showYear(true)
+            selector.optionStyles.showTime(false)
+            
+            let today = Date().beginningOfDay
+            let range = WWCalendarTimeSelectorEnabledDateRange()
+            var next = Calendar.current.date(byAdding: .year, value: +1, to: today) ?? today
+            next = next.endOfDay
+            range.setStartDate(today)
+            range.setEndDate(next)
+            
+            selector.optionRangeOfEnabledDates = range
             
         default:
             break

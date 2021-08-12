@@ -1766,6 +1766,11 @@ open class WWCalendarTimeSelector: UIViewController, UITableViewDelegate, UITabl
                 cell.textLabel?.font = optionCurrentDate.year == displayYear ? optionCalendarFontCurrentYearHighlight : optionCalendarFontCurrentYear
                 cell.textLabel?.textColor = optionCurrentDate.year == displayYear ? optionCalendarFontColorCurrentYearHighlight : optionCalendarFontColorCurrentYear
             }
+
+            if (!isYearEnabled(currentYear: displayYear)) {
+                cell.textLabel?.textColor = optionCalendarFontColorDisabledDays
+            }
+            
             cell.textLabel?.text = "\(displayYear)"
         }
         else { // multiple dates table
@@ -1799,12 +1804,23 @@ open class WWCalendarTimeSelector: UIViewController, UITableViewDelegate, UITabl
     open func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         if tableView == yearTable {
             let displayYear = yearRow1 + (indexPath as NSIndexPath).row
-            if let newDate = optionCurrentDate.change(year: displayYear),
-                WWCalendarRowDateIsEnable(newDate),
-                delegate?.WWCalendarTimeSelectorShouldSelectDate?(self, date: newDate) ?? true {
-                optionCurrentDate = newDate
-                updateDate()
-                tableView.reloadData()
+
+            if var newDate = optionCurrentDate.change(year: displayYear) {
+                if (!WWCalendarRowDateIsEnable(newDate)) {
+                    // If the newDate is not enabled, check whether the year is in the range and update to use the latest date that year
+                    if let startDate = optionRangeOfEnabledDates.start, newDate.year == startDate.year {
+                        newDate = startDate
+                        
+                    } else if let endDate = optionRangeOfEnabledDates.end, newDate.year == endDate.year {
+                        newDate = endDate
+                    }
+                }
+                
+                if (WWCalendarRowDateIsEnable(newDate) && delegate?.WWCalendarTimeSelectorShouldSelectDate?(self, date: newDate) ?? true) {
+                    optionCurrentDate = newDate
+                    updateDate()
+                    tableView.reloadData()
+                }
             }
         }
         else if tableView == selMultipleDatesTable {
@@ -1875,6 +1891,19 @@ open class WWCalendarTimeSelector: UIViewController, UITableViewDelegate, UITabl
                 yearTable.reloadData()
             }
         }
+    }
+
+    func isYearEnabled(currentYear: Int) -> Bool {
+        var isEnabled = true
+        
+        if let startDate = optionRangeOfEnabledDates.start, currentYear < startDate.year {
+            isEnabled = false
+            
+        } else if let endDate = optionRangeOfEnabledDates.end, currentYear > endDate.year {
+            isEnabled = false
+        }
+        
+        return isEnabled
     }
     
     internal func WWCalendarRowDateIsEnable(_ date: Date) -> Bool {
